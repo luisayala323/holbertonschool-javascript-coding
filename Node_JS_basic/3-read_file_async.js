@@ -1,35 +1,44 @@
 /* 3-read_file_async.js */
-const express = require('express');
-const countStudents = require('./3-read_file_async');
+const fs = require('fs').promises;
 
-const app = express();
-const port = 1245;
+function countStudents(path) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(path, 'utf8')
+      .then((fileContents) => {
+        const lines = fileContents.split('\n').filter((line) => line.trim() !== '');
+        const fieldCounts = {};
 
-app.get('/', (req, res) => {
-  res.send('Hello Holberton School!');
-});
+        for (const line of lines) {
+          const data = line.split(',');
 
-app.get('/students', async (req, res) => {
-  const databaseFileName = process.argv[2];
+          if (data.length === 4) {
+            const field = data[3].trim();
 
-  if (!databaseFileName) {
-    res.status(500).send('Internal Server Error: Database file not provided.');
-    return;
-  }
+            if (fieldCounts[field]) {
+              fieldCounts[field].push(data[0].trim());
+            } else {
+              fieldCounts[field] = [data[0].trim()];
+            }
+          }
+        }
 
-  try {
-    await countStudents(databaseFileName);
+        const totalStudents = lines.length - 1;
+        console.log(`Number of students: ${totalStudents}`);
 
-    // The countStudents function already logs the information to the console,
-    // so you can simply send a success response here.
-    res.send('Successfully counted students.');
-  } catch (error) {
-    res.status(500).send(`Internal Server Error: ${error.message}`);
-  }
-});
+        for (const field in fieldCounts) {
+          if (Object.prototype.hasOwnProperty.call(fieldCounts, field)) {
+            const count = fieldCounts[field].length;
+            const list = fieldCounts[field].join(', ');
+            console.log(`Number of students in ${field}: ${count}. List: ${list}`);
+          }
+        }
 
-app.listen(port, () => {
-  console.log(`Server is listening on port ${port}`);
-});
+        resolve();
+      })
+      .catch(() => {
+        reject(new Error('Cannot load the database'));
+      });
+  });
+}
 
-module.exports = app;
+module.exports = countStudents;
