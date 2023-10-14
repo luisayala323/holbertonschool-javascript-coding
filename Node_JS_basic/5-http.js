@@ -12,8 +12,14 @@ app.get('/', (req, res) => {
 app.get('/students', async (req, res) => {
   try {
     const databaseFilename = process.argv[2];
+
+    if (!databaseFilename) {
+      return res.status(500).send('Database file not provided.');
+    }
+
     const fileContents = await fs.readFile(databaseFilename, 'utf8');
     const lines = fileContents.split('\n').filter((line) => line.trim() !== '');
+
     const fieldCounts = {};
 
     for (const line of lines) {
@@ -22,7 +28,7 @@ app.get('/students', async (req, res) => {
       if (data.length === 4) {
         const field = data[3].trim();
 
-        if (Object.prototype.hasOwnProperty.call(fieldCounts, field)) {
+        if (field in fieldCounts) {
           fieldCounts[field].push(data[0].trim());
         } else {
           fieldCounts[field] = [data[0].trim()];
@@ -30,12 +36,12 @@ app.get('/students', async (req, res) => {
       }
     }
 
-    const totalStudents = lines.length - 1;
+    const totalStudents = lines.length;
     let response = 'This is the list of our students\n';
     response += `Number of students: ${totalStudents}\n`;
 
     for (const field in fieldCounts) {
-      if (Object.prototype.hasOwnProperty.call(fieldCounts, field)) {
+      if (fieldCounts.hasOwnProperty(field)) {
         const count = fieldCounts[field].length;
         const list = fieldCounts[field].join(', ');
         response += `Number of students in ${field}: ${count}. List: ${list}\n`;
