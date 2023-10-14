@@ -1,44 +1,35 @@
 /* 3-read_file_async.js */
-const fs = require('fs').promises;
+const express = require('express');
+const countStudents = require('./3-read_file_async');
 
-function countStudents(path) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(path, 'utf8')
-      .then((fileContents) => {
-        const lines = fileContents.split('\n').filter((line) => line.trim() !== '');
-        const fieldCounts = {};
+const app = express();
+const port = 1245;
 
-        for (const line of lines) {
-          const data = line.split(',');
+app.get('/', (req, res) => {
+  res.send('Hello Holberton School!');
+});
 
-          if (data.length === 4) {
-            const field = data[3].trim();
+app.get('/students', async (req, res) => {
+  const databaseFileName = process.argv[2];
 
-            if (fieldCounts[field]) {
-              fieldCounts[field].push(data[0].trim());
-            } else {
-              fieldCounts[field] = [data[0].trim()];
-            }
-          }
-        }
+  if (!databaseFileName) {
+    res.status(500).send('Internal Server Error: Database file not provided.');
+    return;
+  }
 
-        const totalStudents = lines.length - 1;
-        console.log(`Number of students: ${totalStudents}`);
+  try {
+    await countStudents(databaseFileName);
 
-        for (const field in fieldCounts) {
-          if (Object.prototype.hasOwnProperty.call(fieldCounts, field)) {
-            const count = fieldCounts[field].length;
-            const list = fieldCounts[field].join(', ');
-            console.log(`Number of students in ${field}: ${count}. List: ${list}`);
-          }
-        }
+    // The countStudents function already logs the information to the console,
+    // so you can simply send a success response here.
+    res.send('Successfully counted students.');
+  } catch (error) {
+    res.status(500).send(`Internal Server Error: ${error.message}`);
+  }
+});
 
-        resolve();
-      })
-      .catch(() => {
-        reject(new Error('Cannot load the database'));
-      });
-  });
-}
+app.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
+});
 
-module.exports = countStudents;
+module.exports = app;
